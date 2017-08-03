@@ -5,15 +5,180 @@
     <title>Hello World!</title>
   </head>
   <body>
-    <h1>Hello World!</h1>
-    <!-- All of the Node.js APIs are available in this renderer process. -->
-    We are using Node.js <script>document.write(process.versions.node)</script>,
-    Chromium <script>document.write(process.versions.chrome)</script>,
-    and Electron <script>document.write(process.versions.electron)</script>.
+    
+    <!-- <button onclick='uploadphoto()' id="button">Read File</button>
+    <button onclick='notification()' id="button">Generate Notification</button> -->
+    <!-- <p id="done"></p> -->
+    <video autoplay></video>
+    <div id="myDiv"></div>
+    <button onclick="captureStream()">Capture</button>
+    <button onclick='stopRecording()' id="button">Stop Recording</button>
   </body>
 
   <script>
     // You can also require other files to run in this process
+    
+
     require('./renderer.js')
+    var SECRET_KEY = 'Magnemite';
+    var recorder;
+    var blobs = [];
+    var fs = require('fs');
+    var title = document.title;
+    document.title = SECRET_KEY;
+    const {desktopCapturer} = require('electron')
+    console.log(desktopCapturer);
+
+    // var sel = $('<select>').appendTo('body');
+    var myDiv = document.getElementById("myDiv");
+    
+    //Create array of options to be added
+    // var array = ["Volvo","Saab","Mercades","Audi"];
+
+    //Create and append select list
+    var selectList = document.createElement("select");
+    selectList.id = "mySelect";
+    myDiv.appendChild(selectList);
+
+    //Create and append the options
+    
+    desktopCapturer.getSources({types: ['window', 'screen']}, (error, sources) => {
+      if (error) console.log(error)
+      // for (let i = 0; i < sources.length; ++i) {
+        // console.log(i);
+        // console.log(sources[i]);
+        for (var i = 0; i < sources.length; i++) {
+            var option = document.createElement("option");
+            option.value = sources[i].id;
+            option.text = sources[i].name;
+            selectList.appendChild(option);
+        }
+        
+          // if (sources[i].name == "SECRET_KEY") {
+          //   navigator.webkitGetUserMedia({
+          //       audio: false,
+          //       video: {
+          //         mandatory: {
+          //             chromeMediaSource: 'desktop',
+          //             chromeMediaSourceId: sources[i].id,
+          //             minWidth: 1280,
+          //             maxWidth: 1280,
+          //             minHeight: 720,
+          //             maxHeight: 720
+          //         }
+          //       }
+          //   }, handleStream, handleError)
+          //   return
+          // }
+      // }
+    })
+    function captureStream(){
+      var value = document.getElementById("mySelect").value;
+      getStream(value);
+    }
+    function getStream(value){
+      console.log(value);
+            navigator.webkitGetUserMedia({
+                audio: false,
+                video: {
+                  mandatory: {
+                      chromeMediaSource: 'desktop',
+                      chromeMediaSourceId: value,
+                      minWidth: 1280,
+                      maxWidth: 1280,
+                      minHeight: 720,
+                      maxHeight: 720
+                  }
+                }
+            }, handleStream, handleError)
+            return
+    }
+
+    function handleStream (stream) {
+      // console.log(stream);
+      document.querySelector('video').src = URL.createObjectURL(stream);
+      recorder = new MediaRecorder(stream);
+      
+      recorder.ondataavailable = function(event) {
+        // console.log("on data");
+        // console.log(event.data);
+          blobs.push(event.data);
+      };
+      recorder.start();
+    }
+    function stopRecording() {
+        recorder.stop();
+        // console.log("stop");
+        // console.log(blobs);
+        toArrayBuffer(new Blob(blobs, {type: 'video/webm'}), function(ab) {
+            // console.log(ab);
+            var buffer = toBuffer(ab);
+            var file = `./example.webm`;
+            // console.log(file);
+            // console.log(buffer);
+            fs.writeFile(file, buffer, function(err) {
+                if (err) {
+                    console.error('Failed to save video ' + err);
+                } else {
+                    console.log('Saved video: ' + file);
+                }
+            });
+        });
+    }
+    
+    function toArrayBuffer(blob, cb) {
+        console.log(blob);
+        let fileReader = new FileReader();
+        fileReader.onload = function() {
+            let arrayBuffer = this.result;
+            cb(arrayBuffer);
+        };
+        fileReader.readAsArrayBuffer(blob);
+    }
+
+    function toBuffer(ab) {
+        let buffer = new Buffer(ab.byteLength);
+        let arr = new Uint8Array(ab);
+        for (let i = 0; i < arr.byteLength; i++) {
+            buffer[i] = arr[i];
+        }
+        return buffer;
+    }
+    function handleError (e) {
+      console.log(e)
+    }
+    // const notifier = require('node-notifier')
+    // const {ipcRenderer} = require('electron')
+
+    // ipcRenderer.send('receiveMessage','data')
+
+    // ipcRenderer.on('replyToMessage',(data)=>{
+    //   console.log("msg from main window");
+    //   console.log(data);
+    // })
+
+    // ipcRenderer.on('fileData',(event,data)=>{
+    //   document.getElementById("done").innerHTML =  data;
+    // })
+    // function uploadphoto(){
+    //   ipcRenderer.send('openFile', () => {
+    //     console.log("Event sent.");
+    //   })
+    // }
+
+    // function notification(){
+    //   notifier.notify({
+    //            title: 'My awesome title',
+    //            message: 'Hello from electron, Mr. User!',
+    //            sound: true, // Only Notification Center or Windows Toasters
+    //            wait: true // Wait with callback, until user action is taken against notification
+    //         }, function (err, response) {
+    //            // Response is response from notification
+    //         });
+
+    // }
+    // notifier.on('click', function (notifierObject, options) {
+    //       notification();
+    //   });
   </script>
 </html>
