@@ -7,6 +7,11 @@ const {ipcMain} = require('electron')
 const path = require('path')
 const url = require('url')
 const fs = require('fs')
+// const path = require('path');
+// const remote = require('electron').remote
+
+// const remoteapp = remote.app;
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win
@@ -40,26 +45,45 @@ ipcMain.on('receiveMessage', (event,data) => {
    event.sender.send('replyToMessage', 'async pong')
 })
 
-ipcMain.on('openFile',(event,path)=>{
-    const {dialog} = require('electron')
+// ipcMain.on('openFile',(event,path)=>{
+//     const {dialog} = require('electron')
     
-    dialog.showOpenDialog(function (files){
-      if(files !== undefined){
-        readFiles(files[0]);
+//     dialog.showOpenDialog(function (files){
+//       if(files !== undefined){
+//         readFiles(files[0]);
+//       }
+//     })
+//     function readFiles(filepath){
+//   fs.readFile(filepath,'utf-8',(err,data)=>{
+//     if(err){
+//       alert("error while reading files "+err.message)
+//       return
+//     }
+//     event.sender.send('fileData',data);
+//   })
+// }
+// })
+
+ipcMain.on('SaveCaptureVideo',(event,data)=>{
+    const {dialog} = require('electron')
+    var buffer = data;
+    dialog.showSaveDialog(function (fileName){
+      
+      if (fileName === undefined){
+          event.sender.send('SavedCaptureVideo',"You didn't save the file");
+          return;
       }
+      fs.writeFile(fileName, buffer, function(err) {
+          
+          if (err) {
+              event.sender.send('SavedCaptureVideo','Failed to save video ' + err);
+          } else {
+              event.sender.send('SavedCaptureVideo','Saved video: ' + fileName);
+          }
+      });
+
     })
-    function readFiles(filepath){
-  fs.readFile(filepath,'utf-8',(err,data)=>{
-    if(err){
-      alert("error while reading files "+err.message)
-      return
-    }
-    event.sender.send('fileData',data);
-  })
-}
 })
-
-
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
